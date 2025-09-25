@@ -9,9 +9,12 @@ import plotly.express as px
 # Load Data
 # --------------------------
 
+import os
+
 @st.cache_data
 def load_data():
-    df = pd.read_csv('../data/sample_with_sentiment.csv', parse_dates=['date'])
+    data_path = os.path.join(os.path.dirname(__file__), '../data/sample_with_sentiment.csv')
+    df = pd.read_csv(data_path, parse_dates=['date'])
     return df
 
 df = load_data()
