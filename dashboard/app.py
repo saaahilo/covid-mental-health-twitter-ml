@@ -109,10 +109,18 @@ else:
 # Location-Based Sentiment Analysis
 # --------------------------
 
-# Location aggregation
+# --------------------------
+# Location-based Sentiment
+# --------------------------
+
 loc_sent = filtered_df.dropna(subset=['location_clean']) \
     .groupby(['location_clean', 'sentiment_label']) \
     .size().unstack().fillna(0)
+
+# ✅ Ensure all expected sentiment columns exist
+for sentiment in ['Positive', 'Neutral', 'Negative']:
+    if sentiment not in loc_sent.columns:
+        loc_sent[sentiment] = 0
 
 if not loc_sent.empty:
     loc_sent['total'] = loc_sent.sum(axis=1)
@@ -149,17 +157,5 @@ if not loc_sent.empty:
     st.plotly_chart(fig)
 else:
     st.warning("Not enough location data to display top countries or map.")
-
-# --------------------------
-# Sample Tweets
-# --------------------------
-
-st.subheader("📄 Sample Tweets (Filtered)")
-
-if not filtered_df.empty:
-    st.dataframe(filtered_df[['date', 'user_location', 'sentiment_label', 'text']].sample(5))
-else:
-    st.warning("No tweets found for this filter combination.")
-
 
 
