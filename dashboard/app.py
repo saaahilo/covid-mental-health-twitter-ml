@@ -179,13 +179,14 @@ if not filtered_df['clean_text'].dropna().empty:
     # Sidebar: choose number of topics
     n_topics = st.sidebar.slider("Number of Topics", 2, 10, 5)
 
-    # Vectorize text
+    # Vectorize clean_text
     vectorizer = CountVectorizer(
         max_df=0.95, 
         min_df=2, 
         stop_words='english'
     )
-    dtm = vectorizer.fit_transform(filtered_df['clean_text'].dropna())
+    text_data = filtered_df['clean_text'].dropna()
+    dtm = vectorizer.fit_transform(text_data)
 
     # Fit LDA
     lda = LatentDirichletAllocation(
@@ -194,21 +195,40 @@ if not filtered_df['clean_text'].dropna().empty:
     )
     lda.fit(dtm)
 
-    # Display top words per topic
+    # Get top words per topic
     words = vectorizer.get_feature_names_out()
     topics = []
     for idx, topic in enumerate(lda.components_):
         top_words = [words[i] for i in topic.argsort()[-10:]]
         topics.append({"Topic": f"Topic {idx+1}", "Top Words": ", ".join(top_words[::-1])})
-
     topics_df = pd.DataFrame(topics)
+
+    st.subheader("🧾 Topics Discovered")
     st.dataframe(topics_df)
 
-    # Optional: Topic distribution chart
-    st.subheader("Topic Word Importance")
-    topic_choice = st.selectbox("Select a Topic to View Top Words", topics_df['Topic'])
-    topic_idx = int(topic_choice.split()[-1]) - 1
+    # Assign topics to tweets
+    topic_probs = lda.transform(dtm)
+    dominant_topics = topic_probs.argmax(axis=1)
+    text_data_with_topic = text_data.reset_index(drop=True).to_frame()
+    text_data_with_topic['Assigned_Topic'] = dominant_topics
+    text_data_with_topic['Assigned_Topic_Label'] = text_data_with_topic['Assigned_Topic'].apply(lambda x: f"Topic {x+1}")
 
+    # Merge with filtered_df
+    filtered_df = filtered_df.reset_index(drop=True)
+    filtered_df['Assigned_Topic'] = text_data_with_topic['Assigned_Topic']
+    filtered_df['Assigned_Topic_Label'] = text_data_with_topic['Assigned_Topic_Label']
+
+    # Sidebar: topic filter
+    topic_options = ["All"] + sorted(filtered_df['Assigned_Topic_Label'].dropna().unique().tolist())
+    selected_topic = st.sidebar.selectbox("Filter by Topic", topic_options)
+
+    if selected_topic != "All":
+        filtered_df = filtered_df[filtered_df['Assigned_Topic_Label'] == selected_topic]
+
+    # Topic bar chart
+    st.subheader("📊 Top Words in Selected Topic")
+    topic_choice = st.selectbox("Select a Topic", topics_df['Topic'])
+    topic_idx = int(topic_choice.split()[-1]) - 1
     top_words = [words[i] for i in lda.components_[topic_idx].argsort()[-10:]]
     word_weights = lda.components_[topic_idx][lda.components_[topic_idx].argsort()[-10:]]
     fig = px.bar(
@@ -221,6 +241,7 @@ if not filtered_df['clean_text'].dropna().empty:
 
 else:
     st.warning("No tweets available for topic modeling.")
+st.subheader("📄 Sample Tweets (Filtered)")
 
 
 
