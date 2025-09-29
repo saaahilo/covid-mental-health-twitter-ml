@@ -113,11 +113,6 @@ else:
 # Location-based Sentiment
 # --------------------------
 
-# --------------------------
-# Location-based Sentiment Comparison
-# --------------------------
-
-# Group by location and sentiment
 loc_sent = filtered_df.dropna(subset=['location_clean']) \
     .groupby(['location_clean', 'sentiment_label']) \
     .size().unstack().fillna(0)
@@ -128,46 +123,53 @@ for sentiment in ['Positive', 'Neutral', 'Negative']:
         loc_sent[sentiment] = 0
 
 if not loc_sent.empty:
-    # Calculate total and sentiment percentages
     loc_sent['total'] = loc_sent.sum(axis=1)
-    loc_sent['positive_pct'] = loc_sent['Positive'] / loc_sent['total']
-    loc_sent['neutral_pct'] = loc_sent['Neutral'] / loc_sent['total']
     loc_sent['negative_pct'] = loc_sent['Negative'] / loc_sent['total']
 
-    # 📊 Top 10 countries by total tweet volume
-    top10 = loc_sent.sort_values(by='total', ascending=False).head(10)
+    # Top 10 countries
+    st.subheader("🌍 Top 10 Countries by Negative Sentiment (%)")
+    top10_neg = loc_sent.sort_values(by='negative_pct', ascending=False).head(10)
 
-    # Melt into long format for grouped bar chart
-    melted = top10[['positive_pct', 'neutral_pct', 'negative_pct']].reset_index().melt(
-        id_vars='location_clean',
-        value_vars=['positive_pct', 'neutral_pct', 'negative_pct'],
-        var_name='Sentiment',
-        value_name='Percentage'
-    )
-
-    # Clean sentiment labels
-    melted['Sentiment'] = melted['Sentiment'].str.replace('_pct', '').str.capitalize()
-
-    # 📊 Grouped Bar Chart
-    st.subheader("🌍 Top 10 Countries by Sentiment % (Grouped)")
     fig = px.bar(
-        melted,
-        x='Percentage',
-        y='location_clean',
-        color='Sentiment',
+        top10_neg,
+        x='negative_pct',
+        y=top10_neg.index,
         orientation='h',
-        barmode='group',
-        title='Sentiment Comparison by Country',
-        color_discrete_map={
-            'Positive': 'green',
-            'Neutral': 'blue',
-            'Negative': 'red'
-        }
+        color='negative_pct',
+        labels={'negative_pct': 'Negative Sentiment %'},
+        title="Top 10 Countries by % Negative Tweets",
+        color_continuous_scale='Reds'
     )
     st.plotly_chart(fig)
 
+    # Choropleth map
+    st.subheader("🗺️ Global Negative Sentiment Map")
+
+    fig = px.choropleth(
+        loc_sent,
+        locations=loc_sent.index,
+        locationmode='country names',
+        color='negative_pct',
+        hover_name=loc_sent.index,
+        color_continuous_scale='Reds',
+        title='Negative Sentiment % by Country'
+    )
+    st.plotly_chart(fig)
 else:
-    st.warning("Not enough location data to display sentiment breakdown by country.")
+    st.warning("Not enough location data to display top countries or map.")
+
+# --------------------------
+# Sample Tweets (Filtered)
+# --------------------------
+
+st.subheader("📄 Sample Tweets (Filtered)")
+
+if not filtered_df.empty:
+    st.dataframe(
+        filtered_df[['date', 'user_location', 'sentiment_label', 'text']].sample(5)
+    )
+else:
+    st.warning("No tweets found for this filter combination.")
 
 
 
