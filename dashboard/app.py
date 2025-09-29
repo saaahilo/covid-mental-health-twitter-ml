@@ -170,6 +170,57 @@ if not filtered_df.empty:
     )
 else:
     st.warning("No tweets found for this filter combination.")
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+st.subheader("🔍 Discover Topics in Tweets (LDA)")
+
+if not filtered_df['clean_text'].dropna().empty:
+    # Sidebar: choose number of topics
+    n_topics = st.sidebar.slider("Number of Topics", 2, 10, 5)
+
+    # Vectorize text
+    vectorizer = CountVectorizer(
+        max_df=0.95, 
+        min_df=2, 
+        stop_words='english'
+    )
+    dtm = vectorizer.fit_transform(filtered_df['clean_text'].dropna())
+
+    # Fit LDA
+    lda = LatentDirichletAllocation(
+        n_components=n_topics, 
+        random_state=42
+    )
+    lda.fit(dtm)
+
+    # Display top words per topic
+    words = vectorizer.get_feature_names_out()
+    topics = []
+    for idx, topic in enumerate(lda.components_):
+        top_words = [words[i] for i in topic.argsort()[-10:]]
+        topics.append({"Topic": f"Topic {idx+1}", "Top Words": ", ".join(top_words[::-1])})
+
+    topics_df = pd.DataFrame(topics)
+    st.dataframe(topics_df)
+
+    # Optional: Topic distribution chart
+    st.subheader("Topic Word Importance")
+    topic_choice = st.selectbox("Select a Topic to View Top Words", topics_df['Topic'])
+    topic_idx = int(topic_choice.split()[-1]) - 1
+
+    top_words = [words[i] for i in lda.components_[topic_idx].argsort()[-10:]]
+    word_weights = lda.components_[topic_idx][lda.components_[topic_idx].argsort()[-10:]]
+    fig = px.bar(
+        x=word_weights[::-1],
+        y=top_words[::-1],
+        orientation='h',
+        title=f"Top Words in {topic_choice}"
+    )
+    st.plotly_chart(fig)
+
+else:
+    st.warning("No tweets available for topic modeling.")
 
 
 
