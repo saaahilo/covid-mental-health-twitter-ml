@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import plotly.express as px
 
+
 # --------------------------
 # Load Data
 # --------------------------
@@ -170,6 +171,9 @@ if not filtered_df.empty:
     )
 else:
     st.warning("No tweets found for this filter combination.")
+
+
+    
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
@@ -206,24 +210,20 @@ if not filtered_df['clean_text'].dropna().empty:
     st.subheader("🧾 Topics Discovered")
     st.dataframe(topics_df)
 
-    # Assign topics to tweets
+    # Assign topics to tweets (create a copy so filtered_df is safe)
     topic_probs = lda.transform(dtm)
     dominant_topics = topic_probs.argmax(axis=1)
-    text_data_with_topic = text_data.reset_index(drop=True).to_frame()
-    text_data_with_topic['Assigned_Topic'] = dominant_topics
-    text_data_with_topic['Assigned_Topic_Label'] = text_data_with_topic['Assigned_Topic'].apply(lambda x: f"Topic {x+1}")
-
-    # Merge with filtered_df
-    filtered_df = filtered_df.reset_index(drop=True)
-    filtered_df['Assigned_Topic'] = text_data_with_topic['Assigned_Topic']
-    filtered_df['Assigned_Topic_Label'] = text_data_with_topic['Assigned_Topic_Label']
+    assigned_df = filtered_df.copy().reset_index(drop=True)
+    assigned_df = assigned_df.loc[:len(text_data)-1]  # match index length
+    assigned_df['Assigned_Topic'] = dominant_topics
+    assigned_df['Assigned_Topic_Label'] = assigned_df['Assigned_Topic'].apply(lambda x: f"Topic {x+1}")
 
     # Sidebar: topic filter
-    topic_options = ["All"] + sorted(filtered_df['Assigned_Topic_Label'].dropna().unique().tolist())
+    topic_options = ["All"] + sorted(assigned_df['Assigned_Topic_Label'].dropna().unique().tolist())
     selected_topic = st.sidebar.selectbox("Filter by Topic", topic_options)
 
     if selected_topic != "All":
-        filtered_df = filtered_df[filtered_df['Assigned_Topic_Label'] == selected_topic]
+        assigned_df = assigned_df[assigned_df['Assigned_Topic_Label'] == selected_topic]
 
     # Topic bar chart
     st.subheader("📊 Top Words in Selected Topic")
@@ -239,9 +239,13 @@ if not filtered_df['clean_text'].dropna().empty:
     )
     st.plotly_chart(fig)
 
+    # Show sample tweets for selected topic
+    st.subheader("📄 Sample Tweets for Selected Topic")
+    if not assigned_df.empty:
+        st.dataframe(
+            assigned_df[['date','user_location','sentiment_label','text','Assigned_Topic_Label']].sample(5)
+        )
+    else:
+        st.warning("No tweets found for this topic selection.")
 else:
     st.warning("No tweets available for topic modeling.")
-st.subheader("📄 Sample Tweets (Filtered)")
-
-
-
