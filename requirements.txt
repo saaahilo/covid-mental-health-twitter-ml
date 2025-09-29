@@ -5,4 +5,4 @@ plotly
 wordcloud
 pycountry
 vaderSentiment
-
+scikit-learn
