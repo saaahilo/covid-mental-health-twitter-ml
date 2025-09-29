@@ -173,7 +173,7 @@ else:
     st.warning("No tweets found for this filter combination.")
 
 
-    
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
@@ -210,13 +210,19 @@ if not filtered_df['clean_text'].dropna().empty:
     st.subheader("🧾 Topics Discovered")
     st.dataframe(topics_df)
 
-    # Assign topics to tweets (create a copy so filtered_df is safe)
+    # Assign topics to tweets
     topic_probs = lda.transform(dtm)
     dominant_topics = topic_probs.argmax(axis=1)
-    assigned_df = filtered_df.copy().reset_index(drop=True)
-    assigned_df = assigned_df.loc[:len(text_data)-1]  # match index length
+
+    # Cleaned df with matching length and metadata
+    assigned_df = text_data.reset_index(drop=True).to_frame()
     assigned_df['Assigned_Topic'] = dominant_topics
     assigned_df['Assigned_Topic_Label'] = assigned_df['Assigned_Topic'].apply(lambda x: f"Topic {x+1}")
+
+    # Add back original metadata (safe alignment)
+    meta_cols = ['date', 'user_location', 'sentiment_label', 'text']
+    for col in meta_cols:
+        assigned_df[col] = filtered_df[col].dropna().reset_index(drop=True)
 
     # Sidebar: topic filter
     topic_options = ["All"] + sorted(assigned_df['Assigned_Topic_Label'].dropna().unique().tolist())
