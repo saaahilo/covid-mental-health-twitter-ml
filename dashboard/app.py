@@ -177,6 +177,14 @@ else:
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
+st.markdown("### 🛠️ LDA Debug Info")
+st.write("Filtered rows:", filtered_df.shape[0])
+if 'clean_text' in filtered_df.columns:
+    st.write("Non-empty clean_text rows:", filtered_df['clean_text'].dropna().shape[0])
+    st.write("Example clean text:", filtered_df['clean_text'].dropna().head())
+else:
+    st.error("🚫 'clean_text' column not found in dataframe.")
+
 st.subheader("🔍 Discover Topics in Tweets (LDA)")
 
 if not filtered_df['clean_text'].dropna().empty:
