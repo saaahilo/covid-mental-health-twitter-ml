@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from wordcloud import WordCloud
 import plotly.express as px
 import os
+import joblib
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
@@ -129,6 +130,7 @@ if not loc_sent.empty:
         "Negative": "Reds"
     }
 
+    # --- Top 10 Countries Bar Chart ---
     top10 = loc_sent.sort_values(by=selected_pct, ascending=False).head(10)
 
     fig = px.bar(
@@ -143,7 +145,7 @@ if not loc_sent.empty:
     )
     st.plotly_chart(fig)
 
-    # Choropleth map
+    # --- Choropleth Map with Counts ---
     st.subheader(f"🗺️ Global {selected_sentiment} Sentiment Map")
 
     fig = px.choropleth(
@@ -152,14 +154,32 @@ if not loc_sent.empty:
         locationmode='country names',
         color=selected_pct,
         hover_name=loc_sent.index,
+        # ✅ Show counts and totals in hover tooltip
+        hover_data={
+            selected_pct: ':.2%',
+            'Positive': True,
+            'Neutral': True,
+            'Negative': True,
+            'total': True
+        },
         color_continuous_scale=color_scale[selected_sentiment],
         title=f'{selected_sentiment} Sentiment % by Country',
         labels={selected_pct: f'{selected_sentiment} Sentiment %'}
     )
+
+    # ✅ Nice colorbar formatting for %
+    fig.update_layout(
+        coloraxis_colorbar=dict(
+            title=f"{selected_sentiment} %",
+            tickformat=".0%"
+        )
+    )
+
     st.plotly_chart(fig)
 
 else:
     st.warning("Not enough location data to display sentiment maps or charts.")
+
 
 # --------------------------
 # Sample Tweets (Filtered)
@@ -258,3 +278,22 @@ if not text_data_all.empty:
         st.warning("No tweets found for this topic selection.")
 else:
     st.warning("No tweets available for topic modeling.")
+
+# --------------------------
+# Sentiment Prediction
+# --------------------------
+
+st.subheader("🧪 Try Your Own Tweet")
+
+user_input = st.text_area("Enter a tweet to analyze its sentiment:")
+
+# Load model (once)
+@st.cache_resource
+def load_model():
+    model_path = os.path.join(os.path.dirname(__file__), '../model/sentiment_model.pkl')
+    return joblib.load(model_path)
+
+if user_input:
+    model = load_model()
+    prediction = model.predict([user_input])[0]
+    st.markdown(f"### 🧠 Predicted Sentiment: **{prediction}**")
