@@ -296,4 +296,31 @@ def load_model():
 if user_input:
     model = load_model()
     prediction = model.predict([user_input])[0]
-    st.markdown(f"### 🧠 Predicted Sentiment: **{prediction}**")
+    proba = model.predict_proba([user_input])[0]
+
+    # Define colors for each sentiment
+    sentiment_colors = {
+        "Positive": "green",
+        "Neutral": "orange",
+        "Negative": "red"
+    }
+
+    # Get color for predicted sentiment
+    color = sentiment_colors.get(prediction, "gray")
+
+    # Show colored prediction using Markdown with HTML
+    st.markdown(
+        f"""
+        <h4>🧠 Predicted Sentiment:</h4>
+        <p style='color:{color}; font-size:24px; font-weight:bold;'>{prediction}</p>
+        """,
+        unsafe_allow_html=True
+    )
+
+    # Show prediction probabilities below (optional)
+    st.markdown("#### 🔍 Prediction Probabilities:")
+    proba_df = pd.DataFrame({
+        'Sentiment': model.classes_,
+        'Probability': [f"{p:.2%}" for p in proba]
+    })
+    st.dataframe(proba_df)
