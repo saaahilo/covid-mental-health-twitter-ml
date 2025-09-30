@@ -101,46 +101,65 @@ else:
 # Location-Based Sentiment Analysis
 # --------------------------
 
+# Group and pivot sentiment counts per country
 loc_sent = filtered_df.dropna(subset=['location_clean']) \
     .groupby(['location_clean', 'sentiment_label']) \
     .size().unstack().fillna(0)
 
+# Ensure all sentiment columns exist
 for sentiment in ['Positive', 'Neutral', 'Negative']:
     if sentiment not in loc_sent.columns:
         loc_sent[sentiment] = 0
 
 if not loc_sent.empty:
-    loc_sent['total'] = loc_sent.sum(axis=1)
+    # Calculate sentiment percentages
+    loc_sent['total'] = loc_sent[['Positive', 'Neutral', 'Negative']].sum(axis=1)
+    loc_sent['positive_pct'] = loc_sent['Positive'] / loc_sent['total']
+    loc_sent['neutral_pct'] = loc_sent['Neutral'] / loc_sent['total']
     loc_sent['negative_pct'] = loc_sent['Negative'] / loc_sent['total']
 
-    st.subheader("🌍 Top 10 Countries by Negative Sentiment (%)")
-    top10_neg = loc_sent.sort_values(by='negative_pct', ascending=False).head(10)
+    # Let user choose sentiment to visualize
+    st.subheader("🌍 Top 10 Countries by Sentiment %")
+    selected_sentiment = st.selectbox("Choose sentiment", ['Positive', 'Neutral', 'Negative'])
+
+    selected_pct = f"{selected_sentiment.lower()}_pct"
+    color_scale = {
+        "Positive": "Greens",
+        "Neutral": "Blues",
+        "Negative": "Reds"
+    }
+
+    top10 = loc_sent.sort_values(by=selected_pct, ascending=False).head(10)
 
     fig = px.bar(
-        top10_neg,
-        x='negative_pct',
-        y=top10_neg.index,
+        top10,
+        x=selected_pct,
+        y=top10.index,
         orientation='h',
-        color='negative_pct',
-        labels={'negative_pct': 'Negative Sentiment %'},
-        title="Top 10 Countries by % Negative Tweets",
-        color_continuous_scale='Reds'
+        color=selected_pct,
+        labels={selected_pct: f'{selected_sentiment} Sentiment %'},
+        title=f"Top 10 Countries by % {selected_sentiment} Tweets",
+        color_continuous_scale=color_scale[selected_sentiment]
     )
     st.plotly_chart(fig)
 
-    st.subheader("🗺️ Global Negative Sentiment Map")
+    # Choropleth map
+    st.subheader(f"🗺️ Global {selected_sentiment} Sentiment Map")
+
     fig = px.choropleth(
         loc_sent,
         locations=loc_sent.index,
         locationmode='country names',
-        color='negative_pct',
+        color=selected_pct,
         hover_name=loc_sent.index,
-        color_continuous_scale='Reds',
-        title='Negative Sentiment % by Country'
+        color_continuous_scale=color_scale[selected_sentiment],
+        title=f'{selected_sentiment} Sentiment % by Country',
+        labels={selected_pct: f'{selected_sentiment} Sentiment %'}
     )
     st.plotly_chart(fig)
+
 else:
-    st.warning("Not enough location data to display top countries or map.")
+    st.warning("Not enough location data to display sentiment maps or charts.")
 
 # --------------------------
 # Sample Tweets (Filtered)
