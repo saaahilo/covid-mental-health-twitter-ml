@@ -187,11 +187,14 @@ if not text_data_all.empty:
     topics = []
     for idx, topic in enumerate(lda.components_):
         top_words = [words[i] for i in topic.argsort()[-10:]]
-        topics.append({"Topic": f"Topic {idx+1}", "Top Words": ", ".join(top_words[::-1])})
+        topic_keywords = ", ".join(top_words[::-1])
+        topic_label = f"🧠 Topic: {', '.join(top_words[::-1][:2])}"
+        topics.append({"Topic": f"Topic {idx+1}", "Top Words": topic_keywords, "Topic_Label": topic_label})
+    
     topics_df = pd.DataFrame(topics)
 
-    st.subheader("🧾 Topics Discovered")
-    st.dataframe(topics_df)
+    st.subheader("📒 Topics Discovered")
+    st.dataframe(topics_df[['Topic_Label', 'Top Words']])
 
     # Assign topics to tweets
     topic_probs = lda.transform(dtm)
@@ -199,7 +202,9 @@ if not text_data_all.empty:
 
     assigned_df = text_data.reset_index(drop=True).to_frame()
     assigned_df['Assigned_Topic'] = dominant_topics
-    assigned_df['Assigned_Topic_Label'] = assigned_df['Assigned_Topic'].apply(lambda x: f"Topic {x+1}")
+    assigned_df['Assigned_Topic_Label'] = assigned_df['Assigned_Topic'].apply(
+        lambda x: topics_df.iloc[x]['Topic_Label']
+    )
 
     # Sidebar topic filter
     topic_options = ["All"] + sorted(assigned_df['Assigned_Topic_Label'].unique().tolist())
@@ -208,10 +213,11 @@ if not text_data_all.empty:
     if selected_topic != "All":
         assigned_df = assigned_df[assigned_df['Assigned_Topic_Label'] == selected_topic]
 
-    # Show bar chart of top words
+    # Topic bar chart
     st.subheader("📊 Top Words in Selected Topic")
-    topic_choice = st.selectbox("Select a Topic", topics_df['Topic'])
-    topic_idx = int(topic_choice.split()[-1]) - 1
+    topic_choice = st.selectbox("Select a Topic", topics_df['Topic_Label'])
+    topic_idx = topics_df[topics_df['Topic_Label'] == topic_choice].index[0]
+
     top_words = [words[i] for i in lda.components_[topic_idx].argsort()[-10:]]
     word_weights = lda.components_[topic_idx][lda.components_[topic_idx].argsort()[-10:]]
 
@@ -223,7 +229,7 @@ if not text_data_all.empty:
     )
     st.plotly_chart(fig)
 
-    # Sample tweets
+    # Sample tweets for the topic
     st.subheader("📄 Sample Tweets for Selected Topic")
     if not assigned_df.empty:
         st.dataframe(
