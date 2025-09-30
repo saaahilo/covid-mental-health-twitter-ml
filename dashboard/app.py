@@ -146,7 +146,7 @@ if not loc_sent.empty:
     st.plotly_chart(fig)
 
     # --- Choropleth Map with Counts ---
-    st.subheader(f"🗺️ Global {selected_sentiment} Sentiment Map")
+    st.subheader(f"Global {selected_sentiment} Sentiment Map")
 
     fig = px.choropleth(
         loc_sent,
@@ -185,7 +185,7 @@ else:
 # Sample Tweets (Filtered)
 # --------------------------
 
-st.subheader("📄 Sample Tweets (Filtered)")
+st.subheader("Sample Tweets (Filtered)")
 
 if not filtered_df.empty:
     st.dataframe(
@@ -232,7 +232,7 @@ if not text_data_all.empty:
     
     topics_df = pd.DataFrame(topics)
 
-    st.subheader("📒 Topics Discovered")
+    st.subheader("Topics Discovered")
     st.dataframe(topics_df[['Topic_Label', 'Top Words']])
 
     # Assign topics to tweets
@@ -269,7 +269,7 @@ if not text_data_all.empty:
     st.plotly_chart(fig)
 
     # Sample tweets for the topic
-    st.subheader("📄 Sample Tweets for Selected Topic")
+    st.subheader(" Sample Tweets for Selected Topic")
     if not assigned_df.empty:
         st.dataframe(
             assigned_df[['clean_text', 'Assigned_Topic_Label']].sample(min(5, len(assigned_df)))
