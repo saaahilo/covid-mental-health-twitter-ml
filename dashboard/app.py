@@ -161,15 +161,22 @@ else:
 
 st.subheader("🔍 Discover Topics in Tweets (LDA)")
 
-if not filtered_df['clean_text'].dropna().empty:
+text_data_all = filtered_df['clean_text'].dropna()
+
+if not text_data_all.empty:
     st.markdown("### 🛠️ LDA Debug Info")
     st.write("Filtered rows:", filtered_df.shape[0])
-    st.write("Non-empty clean_text rows:", filtered_df['clean_text'].dropna().shape[0])
-    st.dataframe(filtered_df['clean_text'].dropna().sample(5))
+    st.write("Non-empty clean_text rows:", text_data_all.shape[0])
+    st.dataframe(text_data_all.sample(5))
+
+    # Sample data for LDA
+    sample_size = min(2000, len(text_data_all))  # Cap at 2000 for Streamlit Cloud
+    text_data = text_data_all.sample(sample_size, random_state=42)
+
+    st.info(f"Using a sample of **{sample_size} tweets** for topic modeling.")
 
     n_topics = st.sidebar.slider("Number of Topics", 2, 10, 4)
 
-    text_data = filtered_df['clean_text'].dropna()
     vectorizer = CountVectorizer(max_df=0.95, min_df=2, stop_words='english')
     dtm = vectorizer.fit_transform(text_data)
 
@@ -186,6 +193,7 @@ if not filtered_df['clean_text'].dropna().empty:
     st.subheader("🧾 Topics Discovered")
     st.dataframe(topics_df)
 
+    # Assign topics to tweets
     topic_probs = lda.transform(dtm)
     dominant_topics = topic_probs.argmax(axis=1)
 
@@ -193,16 +201,14 @@ if not filtered_df['clean_text'].dropna().empty:
     assigned_df['Assigned_Topic'] = dominant_topics
     assigned_df['Assigned_Topic_Label'] = assigned_df['Assigned_Topic'].apply(lambda x: f"Topic {x+1}")
 
-    meta_cols = ['date', 'user_location', 'sentiment_label', 'text']
-    for col in meta_cols:
-        assigned_df[col] = filtered_df[col].dropna().reset_index(drop=True)
-
-    topic_options = ["All"] + sorted(assigned_df['Assigned_Topic_Label'].dropna().unique().tolist())
+    # Sidebar topic filter
+    topic_options = ["All"] + sorted(assigned_df['Assigned_Topic_Label'].unique().tolist())
     selected_topic = st.sidebar.selectbox("Filter by Topic", topic_options)
 
     if selected_topic != "All":
         assigned_df = assigned_df[assigned_df['Assigned_Topic_Label'] == selected_topic]
 
+    # Show bar chart of top words
     st.subheader("📊 Top Words in Selected Topic")
     topic_choice = st.selectbox("Select a Topic", topics_df['Topic'])
     topic_idx = int(topic_choice.split()[-1]) - 1
@@ -217,10 +223,11 @@ if not filtered_df['clean_text'].dropna().empty:
     )
     st.plotly_chart(fig)
 
+    # Sample tweets
     st.subheader("📄 Sample Tweets for Selected Topic")
     if not assigned_df.empty:
         st.dataframe(
-            assigned_df[['date', 'user_location', 'sentiment_label', 'text', 'Assigned_Topic_Label']].sample(5)
+            assigned_df[['clean_text', 'Assigned_Topic_Label']].sample(min(5, len(assigned_df)))
         )
     else:
         st.warning("No tweets found for this topic selection.")
