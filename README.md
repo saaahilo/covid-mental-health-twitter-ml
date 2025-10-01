@@ -164,7 +164,7 @@ This project is for educational purposes. Data is anonymized and not used for co
 ![Dashboard Overview](screenshots/dashboard_overview.png)
 
 ### 2. Topic Modeling (LDA)
-![LDA Topic Modeling](screenshots/lda_topics.png)
+![LDA Topic Modeling](screenshots/topic_modeling.png)
 
 ### 3. Sentiment Map
 ![Sentiment Map](screenshots/sentiment_map.png)
