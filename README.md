@@ -158,3 +158,18 @@ This uses a basic `TfidfVectorizer` + `MultinomialNB` pipeline trained on the sa
 
 This project is for educational purposes. Data is anonymized and not used for commercial gain.
 
+## Dashboard Screenshots
+
+### 1. Overall Dashboard View
+![Dashboard Overview](screenshots/dashboard_overview.png)
+
+### 2. Topic Modeling (LDA)
+![LDA Topic Modeling](screenshots/lda_topics.png)
+
+### 3. Sentiment Map
+![Sentiment Map](screenshots/sentiment_map.png)
+
+
+
+
+ 
